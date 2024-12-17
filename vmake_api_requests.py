@@ -38,3 +38,37 @@ class VmakeAPI:
                 return None
 
             return task_id
+
+
+        def check_task(self, task_id):
+            """
+            Проверка состояния задачи.
+            :param task_id: ID задачи для проверки.
+            :return: Ссылка на результат или None, если произошла ошибка.
+            """
+            url = f"{self.base_url}/{task_id}"
+            headers = {"X-Api-Key": self.vmake_api_key}
+
+            while True:
+                response = requests.get(url, headers=headers)
+                if response.status_code != 200:
+                    print("Ошибка при проверке задачи:", response.text)
+                    return None
+
+                response_data = response.json()
+                task_status = response_data.get("data", {}).get("status", "unknown")
+                print(f"Статус задачи: {task_status}")
+
+                if task_status == "success":
+                    print("Задача успешно завершена!")
+                    download_url = response_data["data"].get("downloadUrl")
+                    if not download_url:
+                        print("Ошибка: ссылка на результат отсутствует.")
+                        return None
+                    return download_url
+
+                if task_status == "error":
+                    print("Ошибка при обработке задачи:", response_data["data"].get("message", "Неизвестная ошибка"))
+                    return None
+
+                time.sleep(self.check_interval)
